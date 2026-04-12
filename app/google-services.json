@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "330742539637",
+    "project_id": "truckmate-598d1",
+    "storage_bucket": "truckmate-598d1.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:330742539637:android:cb1c05b853900e627e1f3c",
+        "android_client_info": {
+          "package_name": "com.example.truckmate"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBaZVfgU3SGVArSoWoXtPs0mbtGnCvkI9A"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
