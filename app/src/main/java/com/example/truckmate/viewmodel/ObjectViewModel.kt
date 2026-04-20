@@ -34,4 +34,8 @@ class ObjectViewModel : ViewModel() {
             repository.addObject(objectItem)
         }
     }
+
+    fun getObjectById(id: String): LocationObject? {
+        return objects.value.find { it.id == id }
+    }
 }

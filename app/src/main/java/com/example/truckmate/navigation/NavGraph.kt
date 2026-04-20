@@ -34,7 +34,12 @@ fun NavGraph() {
         }
 
         composable("home") {
-            HomeScreen(objectViewModel)
+            HomeScreen(objectViewModel, navController)
+        }
+
+        composable("details/{ objectId }") { backStackEntry ->
+            val objectId = backStackEntry.arguments?.getString("objectId") ?: ""
+
         }
     }
 }
