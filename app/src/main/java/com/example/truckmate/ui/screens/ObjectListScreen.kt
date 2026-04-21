@@ -3,9 +3,7 @@ package com.example.truckmate.ui.screens
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -20,22 +18,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import com.example.truckmate.data.model.ObjectType
 import com.example.truckmate.ui.components.AddObjectDialog
+import com.example.truckmate.ui.components.AppButton
 import com.example.truckmate.ui.components.ObjectCard
 import com.example.truckmate.utils.LocationHelper
 import com.example.truckmate.viewmodel.ObjectViewModel
 
 @Composable
-fun HomeScreen(viewModel: ObjectViewModel, navController: NavController) {
+fun ObjectListScreen(viewModel: ObjectViewModel, navController: NavController) {
     val objects by viewModel.objects.collectAsState()
-    var showDialog by remember { mutableStateOf(false) }
-
-    val context = LocalContext.current
-    val permissionLauncher = rememberLauncherForActivityResult(contract = ActivityResultContracts.RequestPermission(), onResult = { granted -> })
-    LaunchedEffect(Unit) {
-        permissionLauncher.launch(android.Manifest.permission.ACCESS_FINE_LOCATION)
-    }
 
     Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         LazyColumn(contentPadding = PaddingValues(8.dp)) {
@@ -46,21 +37,8 @@ fun HomeScreen(viewModel: ObjectViewModel, navController: NavController) {
             }
         }
 
-        FloatingActionButton(onClick = { showDialog = true }, modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp)) {
-            Text("+")
-        }
-
-        if(showDialog) {
-            val locationHelper = LocationHelper(context)
-            AddObjectDialog(
-                onDismiss = { showDialog = false },
-                onSave = { title, description, type ->
-                    locationHelper.getCurrentLocation { lat, lon ->
-                        viewModel.addObject(title, description, type, lat, lon)
-                    }
-                    showDialog = false
-                }
-            )
+        FloatingActionButton(onClick = { navController.navigate("map") }, modifier = Modifier.align(Alignment.BottomStart).padding(16.dp)) {
+            Text("\uD83D\uDDFA\uFE0F", style = MaterialTheme.typography.headlineSmall)
         }
     }
 }

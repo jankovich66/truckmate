@@ -1,5 +1,6 @@
 package com.example.truckmate.viewmodel
 
+import androidx.compose.runtime.*
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.truckmate.data.model.LocationObject
@@ -14,6 +15,9 @@ class ObjectViewModel : ViewModel() {
 
     private val _objects = MutableStateFlow<List<LocationObject>>(emptyList())
     val objects: StateFlow<List<LocationObject>> = _objects
+
+    var selectedObject by mutableStateOf<LocationObject?>(null)
+        private set
 
     init {
         repository.getObjectsRealtime {
@@ -37,5 +41,9 @@ class ObjectViewModel : ViewModel() {
 
     fun getObjectById(id: String): LocationObject? {
         return objects.value.find { it.id == id }
+    }
+
+    fun selectObject(obj: LocationObject) {
+        selectedObject = obj
     }
 }
