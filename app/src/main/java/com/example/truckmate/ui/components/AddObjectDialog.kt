@@ -51,7 +51,16 @@ fun AddObjectDialog(onDismiss: () -> Unit, onSave: (String, String, ObjectType) 
 
                 Box {
                     OutlinedButton(onClick = { expanded = true }) {
-                        Text(selectedType.name)
+                        when(selectedType.name) {
+                            "PARKING" -> Text("Parking")
+                            "GAS_STATION" -> Text("Gas station")
+                            "SERVICE" -> Text("Service")
+                            "POLICE_PATROL" -> Text("Police patrol")
+                            "ROADWORKS" -> Text("Roadworks")
+                            "RESTRICTION" -> Text("Restriction")
+                            "RESTAURANT" -> Text("Restaurant")
+                            "REST_AREA" -> Text("Rest area")
+                        }
                     }
                     DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
                         ObjectType.entries.forEach { type ->

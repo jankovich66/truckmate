@@ -1,15 +1,22 @@
 package com.example.truckmate.ui.screens
 
+import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Card
 import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
@@ -18,10 +25,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.example.truckmate.data.model.ObjectType
 import com.example.truckmate.ui.components.AddObjectDialog
 import com.example.truckmate.ui.components.AppButton
 import com.example.truckmate.utils.LocationHelper
 import com.example.truckmate.viewmodel.ObjectViewModel
+import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.LatLng
 import com.google.maps.android.compose.*
 import com.google.android.gms.maps.model.CameraPosition
@@ -38,6 +47,7 @@ fun MapScreen(viewModel: ObjectViewModel, navController: NavController) {
     var showDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
+        viewModel.loadIcons(context)
         locationHelper.getCurrentLocation { lat, lon ->
             userLocation = LatLng(lat, lon)
         }
@@ -52,7 +62,7 @@ fun MapScreen(viewModel: ObjectViewModel, navController: NavController) {
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
-        GoogleMap(modifier = Modifier.fillMaxSize(), cameraPositionState = cameraPositionState) {
+        GoogleMap(modifier = Modifier.fillMaxSize(), cameraPositionState = cameraPositionState, onMapClick = { viewModel.selectObject(null) }) {
             userLocation?.let {
                 Marker(state = MarkerState(position = it), title = "You")
             }
@@ -62,6 +72,8 @@ fun MapScreen(viewModel: ObjectViewModel, navController: NavController) {
                     state = MarkerState(position = LatLng(obj.latitude, obj.longitude)),
                     title = obj.title,
                     snippet = obj.type.name,
+//                    icon = getMarkerIcon(obj.type),
+                    icon = viewModel.markerIcons[obj.type] ?: BitmapDescriptorFactory.defaultMarker(),
                     onClick = {
                         viewModel.selectObject(obj)
                         true
@@ -70,10 +82,27 @@ fun MapScreen(viewModel: ObjectViewModel, navController: NavController) {
             }
         }
         selectedObject?.let { obj ->
-            Card(modifier = Modifier.align(Alignment.BottomCenter).padding(16.dp).fillMaxWidth(), shape = RoundedCornerShape(16.dp)) {
+            Card(modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(16.dp)
+                .fillMaxWidth(), shape = RoundedCornerShape(16.dp)) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    Text(obj.title, style = MaterialTheme.typography.titleMedium)
-                    Text(obj.type.name)
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                        Text(obj.title, style = MaterialTheme.typography.titleMedium)
+                        IconButton(onClick = { viewModel.selectObject(null) }) {
+                            Icon(Icons.Default.Close, contentDescription = "Close")
+                        }
+                    }
+                    when(obj.type) {
+                        ObjectType.PARKING -> Text("Parking")
+                        ObjectType.POLICE_PATROL -> Text("Police patrol")
+                        ObjectType.GAS_STATION -> Text("Gas station")
+                        ObjectType.RESTAURANT -> Text("Restaurant")
+                        ObjectType.RESTRICTION -> Text("Restriction")
+                        ObjectType.REST_AREA -> Text("Rest area")
+                        ObjectType.ROADWORKS -> Text("Roadworks")
+                        ObjectType.SERVICE -> Text("Service")
+                    }
                     Spacer(modifier = Modifier.height(8.dp))
                     AppButton("View details") {
                         navController.navigate("details/${ obj.id }")
@@ -81,12 +110,18 @@ fun MapScreen(viewModel: ObjectViewModel, navController: NavController) {
                 }
             }
         }
-        FloatingActionButton(onClick = { showDialog = true }, modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp)) {
-            Text("+")
-        }
+        if(selectedObject === null) {
+            FloatingActionButton(onClick = { showDialog = true }, modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(16.dp)) {
+                Text("+")
+            }
 
-        FloatingActionButton(onClick = { navController.navigate("list") }, modifier = Modifier.align(Alignment.BottomStart).padding(16.dp)) {
-            Text("☰")
+            FloatingActionButton(onClick = { navController.navigate("list") }, modifier = Modifier
+                .align(Alignment.BottomStart)
+                .padding(16.dp)) {
+                Text("☰")
+            }
         }
         if(showDialog) {
             AddObjectDialog(onDismiss = { showDialog = false }, onSave = { title, description, type ->
@@ -96,5 +131,9 @@ fun MapScreen(viewModel: ObjectViewModel, navController: NavController) {
                 showDialog = false
             })
         }
+    }
+
+    BackHandler(enabled = selectedObject != null) {
+        viewModel.selectObject(null)
     }
 }
