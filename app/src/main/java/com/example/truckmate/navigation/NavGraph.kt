@@ -10,6 +10,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.truckmate.ui.screens.HomeScreen
 import com.example.truckmate.ui.screens.LoginScreen
+import com.example.truckmate.ui.screens.ObjectDetailsScreen
 import com.example.truckmate.ui.screens.RegisterScreen
 import com.example.truckmate.viewmodel.AuthViewModel
 import com.example.truckmate.viewmodel.ObjectViewModel
@@ -37,9 +38,9 @@ fun NavGraph() {
             HomeScreen(objectViewModel, navController)
         }
 
-        composable("details/{ objectId }") { backStackEntry ->
+        composable("details/{objectId}") { backStackEntry ->
             val objectId = backStackEntry.arguments?.getString("objectId") ?: ""
-
+            ObjectDetailsScreen(objectId, objectViewModel)
         }
     }
 }

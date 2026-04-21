@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -13,33 +14,28 @@ import com.example.truckmate.data.model.ObjectType
 import androidx.compose.runtime.*
 
 @Composable
-fun AddObjectDialog(
-    onDismiss: () -> Unit,
-    onSave: (String, String, ObjectType) -> Unit
-) {
+fun AddObjectDialog(onDismiss: () -> Unit, onSave: (String, String, ObjectType) -> Unit) {
     var title by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
     var selectedType by remember { mutableStateOf(ObjectType.PARKING) }
     var expanded by remember { mutableStateOf(false) }
 
-    val longitude = 21.89
-    val latitude = 43.32
-
     AlertDialog(
+        containerColor = MaterialTheme.colorScheme.surface,
         onDismissRequest = onDismiss,
         confirmButton = {
             TextButton(onClick = {
                 onSave(title, description, selectedType)
             }) {
-                Text("Save")
+                Text("Save", color = MaterialTheme.colorScheme.primary)
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text("Cancel", color = MaterialTheme.colorScheme.primary)
             }
         },
-        title = { Text("Add object") },
+        title = { Text("Add object", color = MaterialTheme.colorScheme.primary) },
         text = {
             Column {
                 OutlinedTextField(
@@ -60,7 +56,18 @@ fun AddObjectDialog(
                     DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
                         ObjectType.entries.forEach { type ->
                             DropdownMenuItem(
-                                text = { Text(type.name) },
+                                text = {
+                                    when(type.name) {
+                                        "PARKING" -> Text("Parking")
+                                        "GAS_STATION" -> Text("Gas station")
+                                        "SERVICE" -> Text("Service")
+                                        "POLICE_PATROL" -> Text("Police patrol")
+                                        "ROADWORKS" -> Text("Roadworks")
+                                        "RESTRICTION" -> Text("Restriction")
+                                        "RESTAURANT" -> Text("Restaurant")
+                                        "REST_AREA" -> Text("Rest area")
+                                    }
+                                },
                                 onClick = {
                                     selectedType = type
                                     expanded = false
