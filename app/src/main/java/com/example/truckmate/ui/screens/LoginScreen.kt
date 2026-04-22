@@ -1,6 +1,7 @@
 package com.example.truckmate.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -16,12 +17,13 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
 import com.example.truckmate.ui.components.AppButton
 import com.example.truckmate.ui.components.AppTextField
 import com.example.truckmate.viewmodel.AuthViewModel
 
 @Composable
-fun LoginScreen(viewModel: AuthViewModel, onLoginSuccess: () -> Unit) {
+fun LoginScreen(viewModel: AuthViewModel, navController: NavController, onLoginSuccess: () -> Unit) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
 
@@ -34,5 +36,8 @@ fun LoginScreen(viewModel: AuthViewModel, onLoginSuccess: () -> Unit) {
         AppButton("Login") {
             viewModel.login(email, password, onLoginSuccess)
         }
+
+        Text("Don't have account?")
+        Text("Register", modifier = Modifier.clickable{ navController.navigate("register") })
     }
 }

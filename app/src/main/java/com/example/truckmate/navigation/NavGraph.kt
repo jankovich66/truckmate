@@ -1,8 +1,5 @@
 package com.example.truckmate.navigation
 
-import androidx.compose.foundation.layout.Column
-import androidx.compose.material3.Button
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
@@ -15,6 +12,7 @@ import com.example.truckmate.ui.screens.ObjectListScreen
 import com.example.truckmate.ui.screens.RegisterScreen
 import com.example.truckmate.viewmodel.AuthViewModel
 import com.example.truckmate.viewmodel.ObjectViewModel
+import com.google.firebase.auth.FirebaseAuth
 
 @Composable
 fun NavGraph() {
@@ -22,16 +20,28 @@ fun NavGraph() {
     val authViewModel: AuthViewModel = viewModel()
     val objectViewModel: ObjectViewModel = viewModel()
 
-    NavHost(navController, startDestination = "login") {
+    val currentUser = FirebaseAuth.getInstance().currentUser
+
+    val startDestination = if(currentUser != null) "map" else "login"
+
+    NavHost(navController, startDestination = startDestination) {
         composable("login") {
-            LoginScreen(authViewModel) {
-                navController.navigate("map")
+            LoginScreen(authViewModel, navController) {
+                navController.navigate("map") {
+                    popUpTo("login") {
+                        inclusive = true
+                    }
+                }
             }
         }
 
         composable("register") {
             RegisterScreen(authViewModel) {
-                navController.navigate("map")
+                navController.navigate("map") {
+                    popUpTo("register") {
+                        inclusive = true
+                    }
+                }
             }
         }
 

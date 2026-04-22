@@ -22,4 +22,9 @@ class AuthViewModel: ViewModel() {
     fun login(email: String, password: String, onSuccess: () -> Unit) {
         repository.login(email, password, onSuccess)
     }
+
+    fun logout(onLogout: () -> Unit) {
+        repository.logout()
+        onLogout()
+    }
 }
