@@ -1,5 +1,6 @@
 package com.example.truckmate.data.repository
 
+import android.net.Uri
 import androidx.compose.runtime.snapshotFlow
 import com.example.truckmate.data.model.User
 import com.google.firebase.auth.FirebaseAuth
@@ -8,19 +9,38 @@ import com.google.firebase.auth.FirebaseAuthInvalidUserException
 import com.google.firebase.auth.FirebaseAuthUserCollisionException
 import com.google.firebase.auth.FirebaseAuthWeakPasswordException
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.storage.FirebaseStorage
 import kotlinx.coroutines.tasks.await
 
 class AuthRepository {
     private val auth = FirebaseAuth.getInstance()
     private val db = FirebaseFirestore.getInstance()
+    private val storage = FirebaseStorage.getInstance()
 
-    fun register(email: String, password: String, user: User, onSuccess: () -> Unit, onError: (String) -> Unit) {
+    fun register(email: String, password: String, user: User, imageUri: Uri?, onSuccess: () -> Unit, onError: (String) -> Unit) {
         auth.createUserWithEmailAndPassword(email, password)
             .addOnSuccessListener {
                 val userId = auth.currentUser?.uid ?: ""
-                val newUser = user.copy(id = userId)
 
-                db.collection("users").document(userId).set(newUser).addOnSuccessListener { onSuccess() }
+                if(imageUri != null) {
+                    val ref = storage.reference.child("profile_images/$userId.jpg")
+                    ref.putFile(imageUri).continueWithTask {
+                        ref.downloadUrl
+                    }.addOnSuccessListener { uri ->
+                        val newUser = user.copy(
+                            id = userId,
+                            imageUrl = uri.toString()
+                        )
+
+                        db.collection("users").document(userId).set(newUser).addOnSuccessListener {
+                            onSuccess()
+                        }
+                    }
+                }
+                else {
+                    val newUser = user.copy(id = userId)
+                    db.collection("users").document(userId).set(newUser).addOnSuccessListener { onSuccess() }
+                }
             }
             .addOnFailureListener { exception ->
                 val message = when(exception) {

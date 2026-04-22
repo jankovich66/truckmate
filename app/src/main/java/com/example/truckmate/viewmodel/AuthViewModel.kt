@@ -1,5 +1,6 @@
 package com.example.truckmate.viewmodel
 
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.truckmate.data.model.User
@@ -27,7 +28,7 @@ class AuthViewModel: ViewModel() {
         }
     }
 
-    fun register(email: String, password: String, username: String, fullName: String, phone: String, onSuccess: () -> Unit, onError: (String) -> Unit) {
+    fun register(email: String, password: String, username: String, fullName: String, phone: String, imageUri: Uri?, onSuccess: () -> Unit, onError: (String) -> Unit) {
         val user = User(
             email = email,
             username = username,
@@ -36,7 +37,7 @@ class AuthViewModel: ViewModel() {
             createdAt = System.currentTimeMillis()
         )
 
-        repository.register(email, password, user,
+        repository.register(email, password, user, imageUri,
             onSuccess = {
                 val userId = repository.getCurrentUserId()
                 userId?.let { fetchUserData(it) }

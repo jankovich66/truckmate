@@ -1,5 +1,6 @@
 package com.example.truckmate.ui.screens
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -8,7 +9,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -17,9 +21,11 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import coil.compose.rememberAsyncImagePainter
 import com.example.truckmate.ui.components.AppButton
 import com.example.truckmate.ui.components.ProfileItem
 import com.example.truckmate.viewmodel.AuthViewModel
@@ -41,8 +47,23 @@ fun ProfileScreen(authViewModel: AuthViewModel, navController: NavController) {
             Spacer(modifier = Modifier.height(16.dp))
 
             if(user == null) {
-                Text("Loading...")
+                CircularProgressIndicator()
                 return@Column
+            }
+
+            if(user!!.imageUrl.isNotEmpty()) {
+                Image(
+                    painter = rememberAsyncImagePainter(user!!.imageUrl),
+                    contentDescription = "Profile image",
+                    modifier = Modifier.size(120.dp).clip(CircleShape)
+                )
+            }
+            else {
+                Icon(
+                    Icons.Default.Person,
+                    contentDescription = "No image",
+                    modifier = Modifier.size(120.dp)
+                )
             }
 
             ProfileItem("Username", user!!.username)
