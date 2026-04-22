@@ -42,7 +42,7 @@ import com.example.truckmate.service.LocationService
 import com.example.truckmate.ui.components.AddObjectDialog
 import com.example.truckmate.ui.components.AppButton
 import com.example.truckmate.utils.LocationHelper
-import com.example.truckmate.utils.NotificationHelper
+import com.example.truckmate.utils.LocationUtils
 import com.example.truckmate.viewmodel.ObjectViewModel
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.LatLng
@@ -63,6 +63,8 @@ fun MapScreen(viewModel: ObjectViewModel, navController: NavController) {
     var showDialog by remember { mutableStateOf(false) }
 
     val selectedType by viewModel.selectedType.collectAsState()
+
+    val radiusFilter by viewModel.radiusFilter.collectAsState()
 
     LaunchedEffect(Unit) {
         viewModel.loadIcons(context)
@@ -85,7 +87,18 @@ fun MapScreen(viewModel: ObjectViewModel, navController: NavController) {
                 Marker(state = MarkerState(position = it), title = "You")
             }
 
-            objects.filter{ selectedType == null || it.type == selectedType }.forEach { obj ->
+            objects.filter{ obj ->
+                val matchesType = selectedType == null || obj.type == selectedType
+                val matchesRadius = if(radiusFilter == null || userLocation == null) {
+                    true
+                }
+                else {
+                    val distance = LocationUtils.distanceInMeters(userLocation!!.latitude, userLocation!!.longitude, obj.latitude, obj.longitude)
+                    distance <= (radiusFilter!! * 1000)
+                }
+
+                matchesType && matchesRadius
+            }.forEach { obj ->
                 Marker(
                     state = MarkerState(position = LatLng(obj.latitude, obj.longitude)),
                     title = obj.title,
@@ -176,6 +189,27 @@ fun MapScreen(viewModel: ObjectViewModel, navController: NavController) {
                             onClick = {
                                 viewModel.setFilter(type)
                                 expanded = false
+                            }
+                        )
+                    }
+                }
+            }
+            var radiusExpanded by remember { mutableStateOf(false) }
+            Box(modifier = Modifier.padding(16.dp)) {
+                OutlinedButton(onClick = { radiusExpanded = true }) {
+                    Text(if(radiusFilter == null) "Radius: All" else "Radius: ${ radiusFilter?.toInt() } km")
+                }
+                DropdownMenu(expanded = radiusExpanded, onDismissRequest = { radiusExpanded = false }) {
+                    DropdownMenuItem(
+                        text = { Text("All") },
+                        onClick = { viewModel.setRadiusFilter(null); radiusExpanded = false }
+                    )
+                    listOf(5f, 10f, 20f, 50f, 100f).forEach { km ->
+                        DropdownMenuItem(
+                            text = { Text("$km km") },
+                            onClick = {
+                                viewModel.setRadiusFilter(km)
+                                radiusExpanded = false
                             }
                         )
                     }

@@ -30,6 +30,9 @@ class ObjectViewModel : ViewModel() {
     private val _selectedType = MutableStateFlow<ObjectType?>(null)
     val selectedType: StateFlow<ObjectType?> = _selectedType
 
+    private val _radiusFilter = MutableStateFlow<Float?>(null)
+    val radiusFilter: StateFlow<Float?> = _radiusFilter
+
     init {
         repository.getObjectsRealtime {
             _objects.value = it
@@ -85,5 +88,9 @@ class ObjectViewModel : ViewModel() {
 
     fun setFilter(type: ObjectType?) {
         _selectedType.value = type
+    }
+
+    fun setRadiusFilter(radius: Float?) {
+        _radiusFilter.value = radius
     }
 }
