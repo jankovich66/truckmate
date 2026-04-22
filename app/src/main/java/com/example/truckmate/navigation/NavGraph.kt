@@ -25,23 +25,11 @@ fun NavGraph() {
 
     NavHost(navController, startDestination = startDestination) {
         composable("login") {
-            LoginScreen(authViewModel, navController) {
-                navController.navigate("map") {
-                    popUpTo("login") {
-                        inclusive = true
-                    }
-                }
-            }
+            LoginScreen(authViewModel, navController)
         }
 
         composable("register") {
-            RegisterScreen(authViewModel) {
-                navController.navigate("map") {
-                    popUpTo("register") {
-                        inclusive = true
-                    }
-                }
-            }
+            RegisterScreen(authViewModel, navController)
         }
 
         composable("list") {

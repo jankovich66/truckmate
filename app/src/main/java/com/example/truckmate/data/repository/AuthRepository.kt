@@ -3,6 +3,10 @@ package com.example.truckmate.data.repository
 import androidx.compose.runtime.snapshotFlow
 import com.example.truckmate.data.model.User
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
+import com.google.firebase.auth.FirebaseAuthInvalidUserException
+import com.google.firebase.auth.FirebaseAuthUserCollisionException
+import com.google.firebase.auth.FirebaseAuthWeakPasswordException
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.tasks.await
 
@@ -10,19 +14,37 @@ class AuthRepository {
     private val auth = FirebaseAuth.getInstance()
     private val db = FirebaseFirestore.getInstance()
 
-    fun register(email: String, password: String, user: User, onSuccess: () -> Unit) {
-        auth.createUserWithEmailAndPassword(email, password).addOnSuccessListener {
-            val userId = auth.currentUser?.uid ?: ""
-            val newUser = user.copy(id = userId)
+    fun register(email: String, password: String, user: User, onSuccess: () -> Unit, onError: (String) -> Unit) {
+        auth.createUserWithEmailAndPassword(email, password)
+            .addOnSuccessListener {
+                val userId = auth.currentUser?.uid ?: ""
+                val newUser = user.copy(id = userId)
 
-            db.collection("users").document(userId).set(newUser).addOnSuccessListener { onSuccess() }
-        }
+                db.collection("users").document(userId).set(newUser).addOnSuccessListener { onSuccess() }
+            }
+            .addOnFailureListener { exception ->
+                val message = when(exception) {
+                    is FirebaseAuthUserCollisionException -> "Email already exists"
+                    is FirebaseAuthWeakPasswordException -> "Password is too weak"
+                    else -> "Something went wrong"
+                }
+                onError(message)
+            }
     }
 
-    fun login(email: String, password: String, onSuccess: () -> Unit) {
-        auth.signInWithEmailAndPassword(email, password).addOnSuccessListener {
-            onSuccess()
-        }
+    fun login(email: String, password: String, onSuccess: () -> Unit, onError: (String) -> Unit) {
+        auth.signInWithEmailAndPassword(email, password)
+            .addOnSuccessListener {
+                onSuccess()
+            }
+            .addOnFailureListener { exception ->
+                val message = when(exception) {
+                    is FirebaseAuthInvalidCredentialsException -> "Invalid credentials"
+                    is FirebaseAuthInvalidUserException -> "User not found"
+                    else -> "Something went wrong"
+                }
+                onError(message)
+            }
     }
 
     fun logout() {

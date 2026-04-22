@@ -30,20 +30,9 @@ fun ProfileScreen(authViewModel: AuthViewModel, navController: NavController) {
     val user by authViewModel.user.collectAsState()
 
     Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
-        FloatingActionButton(onClick = { navController.navigate("login") { popUpTo(0) } }, modifier = Modifier.align(Alignment.TopEnd).padding(16.dp)) {
+        FloatingActionButton(onClick = { authViewModel.logout { navController.navigate("login") { popUpTo(0) { inclusive = true } } } }, modifier = Modifier.align(Alignment.TopEnd).padding(16.dp)) {
             Icon(painter = painterResource(id = com.example.truckmate.R.drawable.logout), contentDescription = "Logout", tint = MaterialTheme.colorScheme.onSurface, modifier = Modifier.padding(5.dp).size(20.dp))
         }
-//        IconButton(onClick = {
-//            authViewModel.logout {
-//                navController.navigate("login") {
-//                    popUpTo(0)
-//                }
-//            }
-//        },
-//        modifier = Modifier.align(Alignment.TopEnd).padding(16.dp)
-//        ) {
-//            Icon(painter = painterResource(id = com.example.truckmate.R.drawable.logout), contentDescription = "Logout", tint = MaterialTheme.colorScheme.onSurface, modifier = Modifier.padding(5.dp))
-//        }
         Column(
             modifier = Modifier.fillMaxSize()
                 .padding(16.dp)
