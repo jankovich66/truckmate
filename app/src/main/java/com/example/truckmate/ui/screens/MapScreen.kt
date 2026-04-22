@@ -1,5 +1,6 @@
 package com.example.truckmate.ui.screens
 
+import android.content.Intent
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -34,8 +35,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import androidx.navigation.NavController
 import com.example.truckmate.data.model.ObjectType
+import com.example.truckmate.service.LocationService
 import com.example.truckmate.ui.components.AddObjectDialog
 import com.example.truckmate.ui.components.AppButton
 import com.example.truckmate.utils.LocationHelper
@@ -59,19 +62,12 @@ fun MapScreen(viewModel: ObjectViewModel, navController: NavController) {
     var userLocation by remember { mutableStateOf<LatLng?>(null) }
     var showDialog by remember { mutableStateOf(false) }
 
-    val notificationHelper = remember { NotificationHelper(context) }
-    val nearbyObjects by viewModel.nearbyObjects.collectAsState()
-
     val selectedType by viewModel.selectedType.collectAsState()
 
     LaunchedEffect(Unit) {
         viewModel.loadIcons(context)
-        while(true) {
-            locationHelper.getCurrentLocation { lat, lon ->
-                userLocation = LatLng(lat, lon)
-                viewModel.checkNearby(lat, lon)
-            }
-            delay(5000)
+        locationHelper.getCurrentLocation { lat, lon ->
+            userLocation = LatLng(lat, lon)
         }
     }
 
@@ -80,12 +76,6 @@ fun MapScreen(viewModel: ObjectViewModel, navController: NavController) {
     LaunchedEffect(userLocation) {
         userLocation?.let {
             cameraPositionState.position = CameraPosition.fromLatLngZoom(it, 14f)
-        }
-    }
-
-    LaunchedEffect(nearbyObjects) {
-        nearbyObjects.forEach { obj ->
-            notificationHelper.showNotification("Nearby object", "${ obj.title } is near you")
         }
     }
 

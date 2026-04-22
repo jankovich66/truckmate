@@ -32,7 +32,7 @@ import com.example.truckmate.viewmodel.AuthViewModel
 import androidx.compose.material3.Icon
 
 @Composable
-fun LoginScreen(viewModel: AuthViewModel, navController: NavController) {
+fun LoginScreen(viewModel: AuthViewModel, navController: NavController, onLoginSuccess: () -> Unit) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
@@ -80,6 +80,7 @@ fun LoginScreen(viewModel: AuthViewModel, navController: NavController) {
                                 inclusive = true
                             }
                         }
+                        onLoginSuccess()
                     },
                     onError = { fireError ->
                         errorMessage = fireError

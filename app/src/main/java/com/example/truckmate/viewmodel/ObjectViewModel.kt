@@ -27,10 +27,6 @@ class ObjectViewModel : ViewModel() {
     var markerIcons by mutableStateOf<Map<ObjectType, BitmapDescriptor>>(emptyMap())
         private set
 
-    private val _nearbyObjects = MutableStateFlow<List<LocationObject>>(emptyList())
-    val nearbyObjects: StateFlow<List<LocationObject>> = _nearbyObjects
-    private val notifiedIds = mutableSetOf<String>()
-
     private val _selectedType = MutableStateFlow<ObjectType?>(null)
     val selectedType: StateFlow<ObjectType?> = _selectedType
 
@@ -85,19 +81,6 @@ class ObjectViewModel : ViewModel() {
             ObjectType.RESTRICTION to makeIcon(com.example.truckmate.R.drawable.restriction),
             ObjectType.REST_AREA to makeIcon(com.example.truckmate.R.drawable.rest_area)
         )
-    }
-
-    fun checkNearby(lat: Double, lon: Double) {
-        viewModelScope.launch {
-            val result = repository.getNearbyObjects(lat, lon, 500.0)
-            val newObjects = result.filter { obj ->
-                !notifiedIds.contains(obj.id)
-            }
-            newObjects.forEach {
-                notifiedIds.add(it.id)
-            }
-            _nearbyObjects.value = newObjects
-        }
     }
 
     fun setFilter(type: ObjectType?) {

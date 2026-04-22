@@ -22,6 +22,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
@@ -34,9 +35,10 @@ import com.google.firebase.auth.FirebaseAuth
 @Composable
 fun ProfileScreen(authViewModel: AuthViewModel, navController: NavController) {
     val user by authViewModel.user.collectAsState()
+    val context = LocalContext.current
 
     Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
-        FloatingActionButton(onClick = { authViewModel.logout { navController.navigate("login") { popUpTo(0) { inclusive = true } } } }, modifier = Modifier.align(Alignment.TopEnd).padding(16.dp)) {
+        FloatingActionButton(onClick = { authViewModel.logout(context) { navController.navigate("login") { popUpTo(0) { inclusive = true } } } }, modifier = Modifier.align(Alignment.TopEnd).padding(16.dp)) {
             Icon(painter = painterResource(id = com.example.truckmate.R.drawable.logout), contentDescription = "Logout", tint = MaterialTheme.colorScheme.onSurface, modifier = Modifier.padding(5.dp).size(20.dp))
         }
         Column(

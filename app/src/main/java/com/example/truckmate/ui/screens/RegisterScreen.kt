@@ -40,7 +40,7 @@ import com.example.truckmate.ui.components.AppTextField
 import com.example.truckmate.viewmodel.AuthViewModel
 
 @Composable
-fun RegisterScreen(viewModel: AuthViewModel, navController: NavController) {
+fun RegisterScreen(viewModel: AuthViewModel, navController: NavController, onRegisterSuccess: () -> Unit) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var username by remember { mutableStateOf("") }
@@ -110,6 +110,7 @@ fun RegisterScreen(viewModel: AuthViewModel, navController: NavController) {
                                 inclusive = true
                             }
                         }
+                        onRegisterSuccess()
                     },
                     onError = { fireError ->
                         errorMessage = fireError

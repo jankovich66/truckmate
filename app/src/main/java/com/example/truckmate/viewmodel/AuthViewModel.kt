@@ -1,5 +1,6 @@
 package com.example.truckmate.viewmodel
 
+import android.content.Context
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -60,8 +61,8 @@ class AuthViewModel: ViewModel() {
         )
     }
 
-    fun logout(onLogout: () -> Unit) {
-        repository.logout()
+    fun logout(context: Context, onLogout: () -> Unit) {
+        repository.logout(context)
         _user.value = null
         onLogout()
     }

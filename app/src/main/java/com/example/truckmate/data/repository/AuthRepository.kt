@@ -1,8 +1,11 @@
 package com.example.truckmate.data.repository
 
+import android.content.Context
+import android.content.Intent
 import android.net.Uri
 import androidx.compose.runtime.snapshotFlow
 import com.example.truckmate.data.model.User
+import com.example.truckmate.service.LocationService
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
 import com.google.firebase.auth.FirebaseAuthInvalidUserException
@@ -67,8 +70,9 @@ class AuthRepository {
             }
     }
 
-    fun logout() {
+    fun logout(context: Context) {
         auth.signOut()
+        context.stopService(Intent(context, LocationService::class.java))
     }
 
     fun getCurrentUser() = auth.currentUser
