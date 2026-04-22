@@ -4,24 +4,28 @@ import com.example.truckmate.data.model.LocationObject
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.FirebaseFirestoreException
 import kotlinx.coroutines.tasks.await
 
 class ObjectRepository {
     private val db = FirebaseFirestore.getInstance()
     private val collection = db.collection("objects");
-    private val currentUserId: String? = Firebase.auth.currentUser?.uid;
+    private val currentUserId: String?
+        get() = Firebase.auth.currentUser?.uid;
 
     suspend fun addObject(record: LocationObject) {
         val docRef = collection.document()
 
+        val userId = currentUserId ?: ""
+
         val newRecord = record.copy(
             id = docRef.id,
-            userId = currentUserId ?: ""
+            userId = userId
         )
         docRef.set(newRecord).await()
 
-        currentUserId?.let {
-            increaseUserPoints(it)
+        if(userId.isNotEmpty()) {
+            increaseUserPoints(userId)
         }
     }
 
@@ -39,6 +43,10 @@ class ObjectRepository {
 
         db.runTransaction { transaction ->
             val snapshot = transaction.get(userRef)
+            if(!snapshot.exists()) {
+                throw FirebaseFirestoreException("User document not found",
+                    FirebaseFirestoreException.Code.NOT_FOUND)
+            }
             val currentPoints = snapshot.getLong("totalPoints") ?: 0
             transaction.update(userRef, "totalPoints", currentPoints + 10)
         }.await()

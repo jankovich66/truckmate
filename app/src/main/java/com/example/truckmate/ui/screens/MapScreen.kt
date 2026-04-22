@@ -18,6 +18,7 @@ import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Card
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -77,7 +78,6 @@ fun MapScreen(viewModel: ObjectViewModel, navController: NavController) {
                     state = MarkerState(position = LatLng(obj.latitude, obj.longitude)),
                     title = obj.title,
                     snippet = obj.type.name,
-//                    icon = getMarkerIcon(obj.type),
                     icon = viewModel.markerIcons[obj.type] ?: BitmapDescriptorFactory.defaultMarker(),
                     onClick = {
                         viewModel.selectObject(obj)
@@ -114,6 +114,13 @@ fun MapScreen(viewModel: ObjectViewModel, navController: NavController) {
                     }
                 }
             }
+        }
+        FloatingActionButton(onClick = { navController.navigate("leaderboard") }, modifier = Modifier
+            .align(Alignment.TopStart)
+            .padding(16.dp)
+            .background(MaterialTheme.colorScheme.surface, shape = CircleShape)
+        ) {
+            Icon(Icons.Default.Star, contentDescription = "Leaderboard")
         }
         FloatingActionButton(onClick = { navController.navigate("profile") }, modifier = Modifier
             .align(Alignment.TopEnd)
