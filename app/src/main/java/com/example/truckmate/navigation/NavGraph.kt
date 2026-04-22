@@ -9,6 +9,7 @@ import com.example.truckmate.ui.screens.LoginScreen
 import com.example.truckmate.ui.screens.MapScreen
 import com.example.truckmate.ui.screens.ObjectDetailsScreen
 import com.example.truckmate.ui.screens.ObjectListScreen
+import com.example.truckmate.ui.screens.ProfileScreen
 import com.example.truckmate.ui.screens.RegisterScreen
 import com.example.truckmate.viewmodel.AuthViewModel
 import com.example.truckmate.viewmodel.ObjectViewModel
@@ -20,9 +21,7 @@ fun NavGraph() {
     val authViewModel: AuthViewModel = viewModel()
     val objectViewModel: ObjectViewModel = viewModel()
 
-    val currentUser = FirebaseAuth.getInstance().currentUser
-
-    val startDestination = if(currentUser != null) "map" else "login"
+    val startDestination = if(authViewModel.isUserLoggedIn()) "map" else "login"
 
     NavHost(navController, startDestination = startDestination) {
         composable("login") {
@@ -56,6 +55,10 @@ fun NavGraph() {
 
         composable("map") {
             MapScreen(objectViewModel, navController)
+        }
+
+        composable("profile") {
+            ProfileScreen(authViewModel, navController)
         }
     }
 }

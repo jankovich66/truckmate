@@ -1,8 +1,10 @@
 package com.example.truckmate.data.repository
 
+import androidx.compose.runtime.snapshotFlow
 import com.example.truckmate.data.model.User
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import kotlinx.coroutines.tasks.await
 
 class AuthRepository {
     private val auth = FirebaseAuth.getInstance()
@@ -25,5 +27,22 @@ class AuthRepository {
 
     fun logout() {
         auth.signOut()
+    }
+
+    fun getCurrentUser() = auth.currentUser
+
+    fun getCurrentUserId(): String? {
+        return auth.currentUser?.uid
+    }
+
+    suspend fun getUser(userId: String): User? {
+        return db.collection("users").document(userId).get().await().toObject(User::class.java)
+    }
+
+    fun getUserRealtime(userId: String, onUpdate: (User?) -> Unit) {
+        db.collection("users").document(userId).addSnapshotListener { snapshot, _ ->
+            val user = snapshot?.toObject(User::class.java)
+            onUpdate(user)
+        }
     }
 }

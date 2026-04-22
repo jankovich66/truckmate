@@ -1,6 +1,7 @@
 package com.example.truckmate.ui.screens
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -10,9 +11,14 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.List
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.List
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Card
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -23,6 +29,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.truckmate.data.model.ObjectType
@@ -34,6 +41,7 @@ import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.LatLng
 import com.google.maps.android.compose.*
 import com.google.android.gms.maps.model.CameraPosition
+import com.google.android.material.floatingactionbutton.FloatingActionButton
 
 @Composable
 fun MapScreen(viewModel: ObjectViewModel, navController: NavController) {
@@ -110,17 +118,28 @@ fun MapScreen(viewModel: ObjectViewModel, navController: NavController) {
                 }
             }
         }
+        FloatingActionButton(onClick = { navController.navigate("profile") }, modifier = Modifier
+            .align(Alignment.TopEnd)
+            .padding(16.dp)
+            .background(MaterialTheme.colorScheme.surface, shape = CircleShape)
+        ) {
+            Icon(Icons.Default.Person, contentDescription = "Profile")
+        }
         if(selectedObject === null) {
-            FloatingActionButton(onClick = { showDialog = true }, modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(16.dp)) {
-                Text("+")
-            }
-
-            FloatingActionButton(onClick = { navController.navigate("list") }, modifier = Modifier
+            Column(modifier = Modifier
                 .align(Alignment.BottomStart)
-                .padding(16.dp)) {
-                Text("☰")
+                .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                FloatingActionButton(onClick = { showDialog = true }, modifier = Modifier
+                    .padding(16.dp)) {
+                    Icon(Icons.Default.Add, contentDescription = "Add")
+                }
+
+                FloatingActionButton(onClick = { navController.navigate("list") }, modifier = Modifier
+                    .padding(16.dp)) {
+                    Icon(Icons.AutoMirrored.Default.List, contentDescription = "List")
+                }
             }
         }
         if(showDialog) {
