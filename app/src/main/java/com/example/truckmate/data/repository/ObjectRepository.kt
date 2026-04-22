@@ -51,4 +51,17 @@ class ObjectRepository {
             transaction.update(userRef, "totalPoints", currentPoints + 10)
         }.await()
     }
+
+    suspend fun getNearbyObjects(userLat: Double, userLon: Double, radiusMeters: Double): List<LocationObject> {
+        val snapshot = collection.get().await()
+        val objects = snapshot.toObjects(LocationObject::class.java)
+
+        return objects.filter { obj ->
+            val distance = FloatArray(1)
+
+            android.location.Location.distanceBetween(userLat, userLon, obj.latitude, obj.longitude, distance)
+
+            distance[0] <= radiusMeters
+        }
+    }
 }

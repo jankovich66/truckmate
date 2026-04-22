@@ -20,26 +20,33 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Card
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.truckmate.data.model.ObjectType
 import com.example.truckmate.ui.components.AddObjectDialog
 import com.example.truckmate.ui.components.AppButton
 import com.example.truckmate.utils.LocationHelper
+import com.example.truckmate.utils.NotificationHelper
 import com.example.truckmate.viewmodel.ObjectViewModel
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.LatLng
 import com.google.maps.android.compose.*
 import com.google.android.gms.maps.model.CameraPosition
+import kotlinx.coroutines.delay
+import kotlin.math.exp
 
 @Composable
 fun MapScreen(viewModel: ObjectViewModel, navController: NavController) {
@@ -52,10 +59,19 @@ fun MapScreen(viewModel: ObjectViewModel, navController: NavController) {
     var userLocation by remember { mutableStateOf<LatLng?>(null) }
     var showDialog by remember { mutableStateOf(false) }
 
+    val notificationHelper = remember { NotificationHelper(context) }
+    val nearbyObjects by viewModel.nearbyObjects.collectAsState()
+
+    val selectedType by viewModel.selectedType.collectAsState()
+
     LaunchedEffect(Unit) {
         viewModel.loadIcons(context)
-        locationHelper.getCurrentLocation { lat, lon ->
-            userLocation = LatLng(lat, lon)
+        while(true) {
+            locationHelper.getCurrentLocation { lat, lon ->
+                userLocation = LatLng(lat, lon)
+                viewModel.checkNearby(lat, lon)
+            }
+            delay(5000)
         }
     }
 
@@ -67,13 +83,19 @@ fun MapScreen(viewModel: ObjectViewModel, navController: NavController) {
         }
     }
 
+    LaunchedEffect(nearbyObjects) {
+        nearbyObjects.forEach { obj ->
+            notificationHelper.showNotification("Nearby object", "${ obj.title } is near you")
+        }
+    }
+
     Box(modifier = Modifier.fillMaxSize()) {
         GoogleMap(modifier = Modifier.fillMaxSize(), cameraPositionState = cameraPositionState, onMapClick = { viewModel.selectObject(null) }) {
             userLocation?.let {
                 Marker(state = MarkerState(position = it), title = "You")
             }
 
-            objects.forEach { obj ->
+            objects.filter{ selectedType == null || it.type == selectedType }.forEach { obj ->
                 Marker(
                     state = MarkerState(position = LatLng(obj.latitude, obj.longitude)),
                     title = obj.title,
@@ -115,12 +137,60 @@ fun MapScreen(viewModel: ObjectViewModel, navController: NavController) {
                 }
             }
         }
-        FloatingActionButton(onClick = { navController.navigate("leaderboard") }, modifier = Modifier
-            .align(Alignment.TopStart)
-            .padding(16.dp)
-            .background(MaterialTheme.colorScheme.surface, shape = CircleShape)
-        ) {
-            Icon(Icons.Default.Star, contentDescription = "Leaderboard")
+        Column {
+            FloatingActionButton(onClick = { navController.navigate("leaderboard") }, modifier = Modifier
+                //.align(Alignment.TopStart)
+                .padding(16.dp)
+                .background(MaterialTheme.colorScheme.surface, shape = CircleShape)
+            ) {
+                Icon(Icons.Default.Star, contentDescription = "Leaderboard")
+            }
+
+            var expanded by remember { mutableStateOf(false) }
+            Box(modifier = Modifier./*align(Alignment.TopStart).*/padding(16.dp)) {
+                OutlinedButton(onClick = { expanded = true }) {
+                    when(selectedType?.name) {
+                        "PARKING" -> Text("Parking")
+                        "GAS_STATION" -> Text("Gas station")
+                        "SERVICE" -> Text("Service")
+                        "POLICE_PATROL" -> Text("Police patrol")
+                        "ROADWORKS" -> Text("Roadworks")
+                        "RESTRICTION" -> Text("Restriction")
+                        "RESTAURANT" -> Text("Restaurant")
+                        "REST_AREA" -> Text("Rest area")
+                        else -> Text("Filter")
+                    }
+                }
+                DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                    DropdownMenuItem(
+                        text = { Text("All") },
+                        onClick = {
+                            viewModel.setFilter(null)
+                            expanded = false
+                        }
+                    )
+                    ObjectType.entries.forEach { type ->
+                        DropdownMenuItem(
+                            text = {
+                                when(type.name) {
+                                    "PARKING" -> Text("Parking")
+                                    "GAS_STATION" -> Text("Gas station")
+                                    "SERVICE" -> Text("Service")
+                                    "POLICE_PATROL" -> Text("Police patrol")
+                                    "ROADWORKS" -> Text("Roadworks")
+                                    "RESTRICTION" -> Text("Restriction")
+                                    "RESTAURANT" -> Text("Restaurant")
+                                    "REST_AREA" -> Text("Rest area")
+                                }
+                            },
+                            onClick = {
+                                viewModel.setFilter(type)
+                                expanded = false
+                            }
+                        )
+                    }
+                }
+            }
         }
         FloatingActionButton(onClick = { navController.navigate("profile") }, modifier = Modifier
             .align(Alignment.TopEnd)
