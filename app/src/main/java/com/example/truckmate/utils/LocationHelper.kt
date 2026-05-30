@@ -18,10 +18,13 @@ class LocationHelper(private val context: Context) {
     @SuppressLint("MissingPermission")
     fun getCurrentLocation(onResult: (Double, Double) -> Unit) {
         fusedLocationClient.lastLocation.addOnSuccessListener { location ->
-            onResult(location.latitude, location.longitude)
+            location?.let {
+                onResult(it.latitude, it.longitude)
+            }
         }
     }
 
+    @SuppressLint("MissingPermission")
     fun startLocationUpdates(onLocation: (Double, Double) -> Unit) {
         val request = LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 10000).build()
 

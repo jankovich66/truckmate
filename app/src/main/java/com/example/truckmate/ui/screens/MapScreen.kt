@@ -18,6 +18,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Card
@@ -36,6 +37,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.truckmate.data.model.ObjectType
 import com.example.truckmate.service.LocationService
@@ -43,12 +45,17 @@ import com.example.truckmate.ui.components.AddObjectDialog
 import com.example.truckmate.ui.components.AppButton
 import com.example.truckmate.utils.LocationHelper
 import com.example.truckmate.utils.LocationUtils
+import com.example.truckmate.viewmodel.DriverLocationViewModel
 import com.example.truckmate.viewmodel.ObjectViewModel
+import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.LatLng
 import com.google.maps.android.compose.*
 import com.google.android.gms.maps.model.CameraPosition
+import com.google.firebase.auth.FirebaseAuth
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlin.math.exp
 
 @Composable
@@ -56,28 +63,51 @@ fun MapScreen(viewModel: ObjectViewModel, navController: NavController) {
     val objects by viewModel.objects.collectAsState()
     val selectedObject = viewModel.selectedObject
 
+    val driverViewModel: DriverLocationViewModel = viewModel()
+    val drivers by driverViewModel.drivers.collectAsState()
+
     val context = LocalContext.current
     val locationHelper = remember { LocationHelper(context) }
 
     var userLocation by remember { mutableStateOf<LatLng?>(null) }
+    var firstLocation by remember { mutableStateOf(true) }
     var showDialog by remember { mutableStateOf(false) }
 
     val selectedType by viewModel.selectedType.collectAsState()
 
     val radiusFilter by viewModel.radiusFilter.collectAsState()
 
+    val coroutineScope = rememberCoroutineScope()
+
     LaunchedEffect(Unit) {
         viewModel.loadIcons(context)
-        locationHelper.getCurrentLocation { lat, lon ->
+        locationHelper.startLocationUpdates { lat, lon ->
             userLocation = LatLng(lat, lon)
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        while(true) {
+            locationHelper.getCurrentLocation { lat, lon ->
+                driverViewModel.updateLocation(
+                    latitude = lat,
+                    longitude = lon,
+                    username = "Driver"
+                )
+            }
+            delay(10000)
         }
     }
 
     val cameraPositionState = rememberCameraPositionState()
 
     LaunchedEffect(userLocation) {
-        userLocation?.let {
-            cameraPositionState.position = CameraPosition.fromLatLngZoom(it, 14f)
+        if(firstLocation && userLocation != null) {
+            cameraPositionState.animate(
+                CameraUpdateFactory.newLatLngZoom(userLocation!!, 14f)
+            )
+
+            firstLocation = false
         }
     }
 
@@ -110,6 +140,21 @@ fun MapScreen(viewModel: ObjectViewModel, navController: NavController) {
                     }
                 )
             }
+
+            drivers.forEach { driver ->
+                if(driver.userId != FirebaseAuth.getInstance().currentUser?.uid) {
+                    Marker(
+                        state = MarkerState(
+                            position = LatLng(
+                                driver.latitude,
+                                driver.longitude
+                            )
+                        ),
+                        title = driver.username,
+                        snippet = "Driver nearby"
+                    )
+                }
+            }
         }
         selectedObject?.let { obj ->
             Card(modifier = Modifier
@@ -141,6 +186,24 @@ fun MapScreen(viewModel: ObjectViewModel, navController: NavController) {
             }
         }
         Column {
+            // pomeri gde treba
+            FloatingActionButton(
+                onClick = {
+                    userLocation?.let {
+                        coroutineScope.launch {
+                            cameraPositionState.animate(
+                                CameraUpdateFactory.newLatLngZoom(it, 14f)
+                            )
+                        }
+                    }
+                },
+                modifier = Modifier
+                    //.align(Alignment.BottomEnd)
+                    .padding(bottom = 180.dp, end = 16.dp)
+            ) {
+                Icon(Icons.Default.LocationOn, contentDescription = "My location")
+            }
+
             FloatingActionButton(onClick = { navController.navigate("leaderboard") }, modifier = Modifier
                 //.align(Alignment.TopStart)
                 .padding(16.dp)
