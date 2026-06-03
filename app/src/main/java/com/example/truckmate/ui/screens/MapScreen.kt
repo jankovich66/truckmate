@@ -21,6 +21,7 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Card
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -39,13 +40,18 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.example.truckmate.data.model.HelpRequest
+import com.example.truckmate.data.model.HelpType
 import com.example.truckmate.data.model.ObjectType
 import com.example.truckmate.service.LocationService
+import com.example.truckmate.ui.components.AddHelpDialog
 import com.example.truckmate.ui.components.AddObjectDialog
 import com.example.truckmate.ui.components.AppButton
 import com.example.truckmate.utils.LocationHelper
 import com.example.truckmate.utils.LocationUtils
+import com.example.truckmate.viewmodel.AuthViewModel
 import com.example.truckmate.viewmodel.DriverLocationViewModel
+import com.example.truckmate.viewmodel.HelpViewModel
 import com.example.truckmate.viewmodel.ObjectViewModel
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
@@ -78,6 +84,12 @@ fun MapScreen(viewModel: ObjectViewModel, navController: NavController) {
     val radiusFilter by viewModel.radiusFilter.collectAsState()
 
     val coroutineScope = rememberCoroutineScope()
+
+    val helpViewModel: HelpViewModel = viewModel()
+    val helpRequest by helpViewModel.helpRequests.collectAsState()
+    var showHelpDialog by remember { mutableStateOf(false) }
+    val selectedHelpRequest = helpViewModel.selectedHelpRequest
+    val authViewModel: AuthViewModel = viewModel()
 
     LaunchedEffect(Unit) {
         viewModel.loadIcons(context)
@@ -155,6 +167,37 @@ fun MapScreen(viewModel: ObjectViewModel, navController: NavController) {
                     )
                 }
             }
+
+            helpRequest.filter{ !it.resolved }
+                .forEach { help ->
+                    Marker(
+                        state = MarkerState(
+                            position = LatLng(
+                                help.latitude,
+                                help.longitude
+                            )
+                        ),
+                        title = help.username,
+                        snippet = when(help.type) {
+                            HelpType.FLAT_TIRE -> "Flat tire"
+                            HelpType.ENGINE_PROBLEM -> "Engine problem"
+                            HelpType.FIRE -> "Fire"
+                            HelpType.MECHANIC -> "Need mechanic"
+                            HelpType.TOWING -> "Need towing"
+                            HelpType.PARKING -> "Need parking"
+                            HelpType.FUEL -> "Fuel emergency"
+                            HelpType.POLICE -> "Police warning"
+                            HelpType.ACCIDENT -> "Accident"
+                        },
+                        icon = BitmapDescriptorFactory.defaultMarker(
+                            BitmapDescriptorFactory.HUE_RED
+                        ),
+                        onClick = {
+                            helpViewModel.selectHelpRequest(help)
+                            true
+                        }
+                    )
+                }
         }
         selectedObject?.let { obj ->
             Card(modifier = Modifier
@@ -181,6 +224,40 @@ fun MapScreen(viewModel: ObjectViewModel, navController: NavController) {
                     Spacer(modifier = Modifier.height(8.dp))
                     AppButton("View details") {
                         navController.navigate("details/${ obj.id }")
+                    }
+                }
+            }
+        }
+        selectedHelpRequest?.let { help ->
+            Card(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(16.dp)
+                    .fillMaxWidth()
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp)
+                ) {
+                    Text(
+                        help.username,
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(help.type.name.replace("_", " "))
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(help.description)
+                    Spacer(modifier = Modifier.height(12.dp))
+                    if(help.acceptedByUserId.isEmpty()) {
+                        AppButton("I'm coming") {
+                            helpViewModel.acceptHelpRequest(help.id)
+                        }
+                    }
+                    else {
+                        Text("Accepted by ${help.acceptedByUsername}")
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                    AppButton("Resolve") {
+                        helpViewModel.resolveHelpRequest(help.id)
                     }
                 }
             }
@@ -296,6 +373,14 @@ fun MapScreen(viewModel: ObjectViewModel, navController: NavController) {
                     .padding(16.dp)) {
                     Icon(Icons.Default.Add, contentDescription = "Add")
                 }
+                FloatingActionButton(onClick = {
+                    showHelpDialog = true
+                }) {
+                    Icon(
+                        Icons.Default.Warning,
+                        contentDescription = "Help"
+                    )
+                }
 
                 FloatingActionButton(onClick = { navController.navigate("list") }, modifier = Modifier
                     .padding(16.dp)) {
@@ -310,6 +395,31 @@ fun MapScreen(viewModel: ObjectViewModel, navController: NavController) {
                 }
                 showDialog = false
             })
+        }
+        if(showHelpDialog) {
+            AddHelpDialog(
+                onDismiss = {
+                    showHelpDialog = false
+                },
+                onSave = { type, description ->
+                    locationHelper.getCurrentLocation { lat, lon ->
+                        val firebaseUser = FirebaseAuth.getInstance().currentUser
+                        val user = authViewModel.user.value
+                        val request = HelpRequest(
+                            userId = firebaseUser?.uid ?: "",
+                            username = user?.username ?: "Driver",
+                            userImageUrl = user?.imageUrl ?: "",
+                            latitude = lat,
+                            longitude = lon,
+                            type = type,
+                            description = description
+                        )
+
+                        helpViewModel.addHelpRequest(request)
+                    }
+                    showHelpDialog = false
+                }
+            )
         }
     }
 

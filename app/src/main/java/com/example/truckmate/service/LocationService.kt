@@ -6,16 +6,19 @@ import android.app.Service
 import android.content.Context
 import android.content.Intent
 import androidx.core.app.NotificationCompat
+import com.example.truckmate.data.repository.HelpRepository
 import com.example.truckmate.data.repository.ObjectRepository
 import com.example.truckmate.utils.LocationHelper
 import com.example.truckmate.utils.LocationUtils
-import com.google.maps.android.compose.rememberCameraPositionState
+import com.example.truckmate.notification.NotificationHelper
 
 class LocationService: Service() {
     private lateinit var locationHelper: LocationHelper
     private val repository = ObjectRepository()
+    private val helpRepository = HelpRepository()
 
-    private val shownObjects = mutableSetOf<String>()
+    private val notifiedObjects = mutableSetOf<String>()
+    private val notifiedHelpRequests = mutableSetOf<String>()
 
     override fun onCreate() {
         super.onCreate()
@@ -37,9 +40,21 @@ class LocationService: Service() {
             objects.forEach { obj ->
                 val distance = LocationUtils.distanceInMeters(lat, lon, obj.latitude, obj.longitude)
 
-                if(distance < 200 && !shownObjects.contains(obj.id)) {
-                    shownObjects.add(obj.id)
-                    sendNotification(obj.title)
+                if(distance < 200 && !notifiedObjects.contains(obj.id)) {
+                    notifiedObjects.add(obj.id)
+//                    sendNotification(obj.title)
+                    NotificationHelper.showNearbyNotification(context = this, title = "Nearby object", message = obj.title)
+                }
+            }
+        }
+        helpRepository.listenForHelpRequests { helps ->
+            helps.forEach { help ->
+                val distance = LocationUtils.distanceInMeters(lat, lon, help.latitude, help.longitude)
+
+                if(distance < 5000 && !notifiedHelpRequests.contains(help.id)) {
+                    notifiedHelpRequests.add(help.id)
+//                    sendNotification(title = "Driver nearby needs help")
+                    NotificationHelper.showHelpNotification(this, "Driver nearby needs help", help.type.name)
                 }
             }
         }
