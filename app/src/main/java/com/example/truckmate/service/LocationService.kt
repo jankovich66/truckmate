@@ -5,7 +5,10 @@ import android.app.NotificationManager
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.location.Location
 import androidx.core.app.NotificationCompat
+import com.example.truckmate.data.model.HelpRequest
+import com.example.truckmate.data.model.LocationObject
 import com.example.truckmate.data.repository.HelpRepository
 import com.example.truckmate.data.repository.ObjectRepository
 import com.example.truckmate.utils.LocationHelper
@@ -17,14 +20,22 @@ class LocationService: Service() {
     private val repository = ObjectRepository()
     private val helpRepository = HelpRepository()
 
+    private var currentObjects = listOf<LocationObject>()
+    private var currentHelpRequests = listOf<HelpRequest>()
+
     private val notifiedObjects = mutableSetOf<String>()
     private val notifiedHelpRequests = mutableSetOf<String>()
 
     override fun onCreate() {
         super.onCreate()
         locationHelper = LocationHelper(this)
-        createNotificationChannel()
+        //NotificationHelper.createChannels(this)
+
         startForegroundService()
+
+        observeObjects()
+        observeHelpRequests()
+//        createNotificationChannel()
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -36,46 +47,41 @@ class LocationService: Service() {
     }
 
     private fun checkNearby(lat: Double, lon: Double) {
-        repository.getObjectsRealtime { objects ->
-            objects.forEach { obj ->
-                val distance = LocationUtils.distanceInMeters(lat, lon, obj.latitude, obj.longitude)
+        currentObjects.forEach { obj ->
+//                val distance = LocationUtils.distanceInMeters(lat, lon, obj.latitude, obj.longitude)
+            val distance = FloatArray(1)
 
-                if(distance < 200 && !notifiedObjects.contains(obj.id)) {
-                    notifiedObjects.add(obj.id)
+            Location.distanceBetween(
+                lat,
+                lon,
+                obj.latitude,
+                obj.longitude,
+                distance
+            )
+            if(distance[0] < 200 && !notifiedObjects.contains(obj.id)) {
+                notifiedObjects.add(obj.id)
 //                    sendNotification(obj.title)
-                    NotificationHelper.showNearbyNotification(context = this, title = "Nearby object", message = obj.title)
-                }
+                NotificationHelper.showNearbyNotification(context = this, title = "Nearby object", message = obj.title)
             }
         }
-        helpRepository.listenForHelpRequests { helps ->
-            helps.forEach { help ->
-                val distance = LocationUtils.distanceInMeters(lat, lon, help.latitude, help.longitude)
+        currentHelpRequests.forEach { help ->
+//            val distance = LocationUtils.distanceInMeters(lat, lon, help.latitude, help.longitude)
+            val distance = FloatArray(1)
 
-                if(distance < 5000 && !notifiedHelpRequests.contains(help.id)) {
-                    notifiedHelpRequests.add(help.id)
+            Location.distanceBetween(
+                lat,
+                lon,
+                help.latitude,
+                help.longitude,
+                distance
+            )
+
+            if(distance[0] < 5000 && !notifiedHelpRequests.contains(help.id)) {
+                notifiedHelpRequests.add(help.id)
 //                    sendNotification(title = "Driver nearby needs help")
-                    NotificationHelper.showHelpNotification(this, "Driver nearby needs help", help.type.name)
-                }
+                NotificationHelper.showHelpNotification(this, "Driver nearby needs help", help.type.name)
             }
         }
-    }
-
-    private fun sendNotification(title: String) {
-        val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-
-        val notification = NotificationCompat.Builder(this, "location_channel")
-            .setContentTitle("Nearby object")
-            .setContentText(title)
-            .setSmallIcon(android.R.drawable.ic_dialog_map)
-            .build()
-
-        manager.notify(title.hashCode(), notification)
-    }
-
-    private fun createNotificationChannel() {
-        val channel = NotificationChannel("location_channel", "Location notifications",NotificationManager.IMPORTANCE_HIGH)
-        val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        manager.createNotificationChannel(channel)
     }
 
     private fun startForegroundService() {
@@ -89,4 +95,16 @@ class LocationService: Service() {
     }
 
     override fun onBind(intent: Intent?) = null
+
+    private fun observeObjects() {
+        repository.getObjectsRealtime { objects ->
+            currentObjects = objects
+        }
+    }
+
+    private fun observeHelpRequests() {
+        helpRepository.listenForHelpRequests { helps ->
+            currentHelpRequests = helps
+        }
+    }
 }

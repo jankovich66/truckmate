@@ -1,6 +1,7 @@
 package com.example.truckmate.ui.screens
 
 import android.content.Intent
+import android.location.Location
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -86,30 +87,40 @@ fun MapScreen(viewModel: ObjectViewModel, navController: NavController) {
     val coroutineScope = rememberCoroutineScope()
 
     val helpViewModel: HelpViewModel = viewModel()
-    val helpRequest by helpViewModel.helpRequests.collectAsState()
+    val helpRequests by helpViewModel.helpRequests.collectAsState()
     var showHelpDialog by remember { mutableStateOf(false) }
     val selectedHelpRequest = helpViewModel.selectedHelpRequest
     val authViewModel: AuthViewModel = viewModel()
 
-    LaunchedEffect(Unit) {
-        viewModel.loadIcons(context)
-        locationHelper.startLocationUpdates { lat, lon ->
-            userLocation = LatLng(lat, lon)
-        }
+    val currentUserId = remember {
+        FirebaseAuth.getInstance().currentUser?.uid
     }
 
     LaunchedEffect(Unit) {
-        while(true) {
-            locationHelper.getCurrentLocation { lat, lon ->
-                driverViewModel.updateLocation(
-                    latitude = lat,
-                    longitude = lon,
-                    username = "Driver"
-                )
-            }
-            delay(10000)
+        viewModel.loadIcons(context)
+        locationHelper.startLocationUpdates { lat, lon ->
+            val location = LatLng(lat, lon)
+            userLocation = location
+            driverViewModel.updateLocation(
+                lat,
+                lon,
+                username = authViewModel.user.value?.username ?: "Driver"
+            )
         }
     }
+
+//    LaunchedEffect(Unit) {
+//        while(true) {
+//            locationHelper.getCurrentLocation { lat, lon ->
+//                driverViewModel.updateLocation(
+//                    latitude = lat,
+//                    longitude = lon,
+//                    username = "Driver"
+//                )
+//            }
+//            delay(10000)
+//        }
+//    }
 
     val cameraPositionState = rememberCameraPositionState()
 
@@ -123,24 +134,41 @@ fun MapScreen(viewModel: ObjectViewModel, navController: NavController) {
         }
     }
 
+    val filteredObjects = remember (
+        objects,
+        selectedType,
+        radiusFilter,
+        userLocation
+    ) {
+        objects.filter{ obj ->
+            val matchesType = selectedType == null || obj.type == selectedType
+            val matchesRadius = if(radiusFilter == null || userLocation == null) {
+                true
+            }
+            else {
+//                    val distance = LocationUtils.distanceInMeters(userLocation!!.latitude, userLocation!!.longitude, obj.latitude, obj.longitude)
+                val distance = FloatArray(1)
+                Location.distanceBetween(
+                    userLocation!!.latitude,
+                    userLocation!!.longitude,
+                    obj.latitude,
+                    obj.longitude,
+                    distance
+                )
+                distance[0] <= (radiusFilter!! * 1000)
+            }
+
+            matchesType && matchesRadius
+        }
+    }
+
     Box(modifier = Modifier.fillMaxSize()) {
         GoogleMap(modifier = Modifier.fillMaxSize(), cameraPositionState = cameraPositionState, onMapClick = { viewModel.selectObject(null) }) {
             userLocation?.let {
                 Marker(state = MarkerState(position = it), title = "You")
             }
 
-            objects.filter{ obj ->
-                val matchesType = selectedType == null || obj.type == selectedType
-                val matchesRadius = if(radiusFilter == null || userLocation == null) {
-                    true
-                }
-                else {
-                    val distance = LocationUtils.distanceInMeters(userLocation!!.latitude, userLocation!!.longitude, obj.latitude, obj.longitude)
-                    distance <= (radiusFilter!! * 1000)
-                }
-
-                matchesType && matchesRadius
-            }.forEach { obj ->
+            filteredObjects.forEach { obj ->
                 Marker(
                     state = MarkerState(position = LatLng(obj.latitude, obj.longitude)),
                     title = obj.title,
@@ -154,7 +182,7 @@ fun MapScreen(viewModel: ObjectViewModel, navController: NavController) {
             }
 
             drivers.forEach { driver ->
-                if(driver.userId != FirebaseAuth.getInstance().currentUser?.uid) {
+                if(driver.userId != currentUserId) {
                     Marker(
                         state = MarkerState(
                             position = LatLng(
@@ -168,7 +196,7 @@ fun MapScreen(viewModel: ObjectViewModel, navController: NavController) {
                 }
             }
 
-            helpRequest.filter{ !it.resolved }
+            helpRequests.filter{ !it.resolved }
                 .forEach { help ->
                     Marker(
                         state = MarkerState(
@@ -363,7 +391,7 @@ fun MapScreen(viewModel: ObjectViewModel, navController: NavController) {
         ) {
             Icon(Icons.Default.Person, contentDescription = "Profile")
         }
-        if(selectedObject === null) {
+        if(selectedObject == null) {
             Column(modifier = Modifier
                 .align(Alignment.BottomStart)
                 .padding(16.dp),
